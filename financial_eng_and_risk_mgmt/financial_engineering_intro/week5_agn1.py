@@ -1,18 +1,24 @@
 import sys
 import git
 
-repo = git.Repo('.', search_parent_directories=True)
+repo = git.Repo(".", search_parent_directories=True)
 sys.path.append(repo.working_tree_dir)
 print(repo.working_tree_dir)
-from financial_eng_and_risk_mgmt.fin_eng.utils import onePeriodPrice, risk_neutral_prob, \
-    forward_price_of_fixed_value_array, forward_price_array
+from financial_eng_and_risk_mgmt.fin_eng.utils import (
+    onePeriodPrice,
+    risk_neutral_prob,
+    forward_price_of_fixed_value_array,
+    forward_price_array,
+)
 
 #################################################################
 # question 1
 """Pricing a forward contract with dividends
 The current price of silver is $206 per ounce. The storage cost is $1 ounce per year, payable quarterly in advance. 
 Assuming a constant annual interest rate of 9% compounded quarterly, what is the theoretical forward price of silver for delivery in 9 months?"""
-print("\n##############################################################################")
+print(
+    "\n##############################################################################"
+)
 price = 206
 r = 0.09
 cost = 1
@@ -29,7 +35,9 @@ print("Question 1:", price_f)
 """Pricing Call Options
 Consider a 11-period binomial model with R=1.05, S_0 = 50, u=1/d= 1.08. 
 What is the value of a European call option on the stock with strike K=52, assuming that the stock does not pay dividends?"""
-print("\n##############################################################################")
+print(
+    "\n##############################################################################"
+)
 R = 1.05
 price = 50
 strike_price = 52
@@ -56,7 +64,9 @@ The standard deviation of the prices of orange juice and grapefruit juice is abo
 and the correlation coefficient between their prices is about 0.7 (highly correlated). 
 What is the minimum variance hedge for farmer, i.e. how many orange juice futures contracts does the farmer need 
 to purchase in total?"""
-print("\n##############################################################################")
+print(
+    "\n##############################################################################"
+)
 
 production = 150000
 sigma_orange = 0.2
@@ -79,7 +89,9 @@ we expect (1+r)D at either N_{1,0} or N_{1,1}.
 We also have a stock with price S_{0,0} = 10 at N_{0,0}, S_{1,0} = 8 at N_{1,0} and S_{1,1} = 15 at N_{1,1}.
 Now consider an European call option at time t=1 with strike K=12. Can you price the option at N_{0,0} 
 using a replicating strategy, and what is the price?"""
-print("\n##############################################################################")
+print(
+    "\n##############################################################################"
+)
 # r= 0.01
 # print(-10+12/(1+r))
 # print(3/(1+r))
