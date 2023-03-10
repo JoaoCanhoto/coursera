@@ -2,7 +2,7 @@ import sys
 
 import git
 
-repo = git.Repo('.', search_parent_directories=True)
+repo = git.Repo(".", search_parent_directories=True)
 sys.path.append(repo.working_tree_dir)
 
 from financial_eng_and_risk_mgmt.fin_eng.binomial import Binomial
@@ -17,25 +17,30 @@ Your binomial model should use a value of u = 1.0395...
 Compute the price of an American call option with strike K=110 and maturity T=.25 years."""
 # ---- question 1: Compute the price of an American call option
 bnm = Binomial()
-bnm.set_binomial_from_black_scholes(maturity_T=0.25,
-                                    r=0.02,
-                                    n_period=15,
-                                    c_dividend=0.01,
-                                    sigma=0.3,
-                                    price=100,
-                                    s_k_price=110,
-                                    type_amer_eur='american',
-                                    type_call_put='call')
+bnm.set_binomial_from_black_scholes(
+    maturity_T=0.25,
+    r=0.02,
+    n_period=15,
+    c_dividend=0.01,
+    sigma=0.3,
+    price=100,
+    s_k_price=110,
+    type_amer_eur="american",
+    type_call_put="call",
+)
 
-print("\n##############################################################################")
+print(
+    "\n##############################################################################"
+)
 q1 = bnm.calc_option_price()
 bnm.display_diagram()
 print(">>>>>>>>>>>>>>>>>>>>>>>>>")
 print("Question 1: r={:.2f}".format(q1))
 
 
-
-print("\n##############################################################################")
+print(
+    "\n##############################################################################"
+)
 bnm.set_type("put", "american")
 q2 = bnm.calc_option_price()
 bnm.display_diagram(True)
@@ -43,11 +48,11 @@ print(">>>>>>>>>>>>>>>>>>>>>>>>>")
 print("Question 2: r={:.2f}".format(q2))
 
 
-
-
-print("\n##############################################################################")
+print(
+    "\n##############################################################################"
+)
 bnm.set_type("call", "american")
-bnm.n=10
+bnm.n = 10
 q6 = bnm.calc_option_price()
 bnm.display_diagram(True)
 print(">>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -58,7 +63,5 @@ bnm.set_type("put", "american")
 bnm.display_diagram(True)
 
 print("testest")
-print(bnm.calc_gain_array_at_t(0,"call"))
-print(bnm.calc_gain_array_at_t(0,"put"))
-
-
+print(bnm.calc_gain_array_at_t(0, "call"))
+print(bnm.calc_gain_array_at_t(0, "put"))

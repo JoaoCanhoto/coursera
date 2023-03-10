@@ -1,12 +1,12 @@
 def onePeriodPrice(Cu, Cd, q, r):
-    ''' return the one period option price for binomial model
+    """return the one period option price for binomial model
 
     :param Cu: up price
     :param Cd: down price
     :param q: neutral risk probability
     :param r: cash interest
     :returns: price for previous period
-    '''
+    """
     if r > 1:
         print("ATTENTINO! onePeriodPrice, r usually be lower than 1 r=", r)
     if q <= 0 or q >= 1:
@@ -44,6 +44,10 @@ def forward_price_of_fixed_value_array(fixed_value_per_period, r_per_period, n_p
     :return:
     """
     values_array = [
-        [(fixed_value_per_period) * (1 + r_per_period) ** (i - j) if i >= j else 0 for i in range(0, n_periods + 1)] for
-        j in range(0, n_periods)]
+        [
+            (fixed_value_per_period) * (1 + r_per_period) ** (i - j) if i >= j else 0
+            for i in range(0, n_periods + 1)
+        ]
+        for j in range(0, n_periods)
+    ]
     return [sum(x) for x in zip(*values_array)]

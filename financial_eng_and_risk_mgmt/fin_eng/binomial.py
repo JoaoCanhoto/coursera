@@ -6,7 +6,7 @@ from scipy.special import comb
 import sys
 import git
 
-repo = git.Repo('.', search_parent_directories=True)
+repo = git.Repo(".", search_parent_directories=True)
 sys.path.append(repo.working_tree_dir)
 print(repo.working_tree_dir)
 
@@ -14,15 +14,15 @@ from financial_eng_and_risk_mgmt.fin_eng.utils import onePeriodPrice
 
 
 class Binomial:
-    '''
+    """
     Binomial model for option pricing
-    '''
+    """
 
     def __init__(self):  # create default model
-        self.setup(100, 3, 1.07, 0.01, 100., 'european', 'call', 0)
+        self.setup(100, 3, 1.07, 0.01, 100.0, "european", "call", 0)
 
     def setup(self, price, n_period, u, r, s_k, ame_eur, call_put, coupon_rate):
-        ''' set up the basic information for binomial model
+        """set up the basic information for binomial model
         :param price: current price
         :param n_period: number of period of the binomial model
         :param u: price for up / current price
@@ -31,9 +31,9 @@ class Binomial:
         :param ame_eur: option type "american" / "european"
         :param call_put: option type "call" / "put"
         :param coupon_rate: coupon rate
-        '''
+        """
         self.u = u
-        self.d = 1. / u
+        self.d = 1.0 / u
         self.price = price
         self.n = n_period
         self.R = 1 + r
@@ -43,17 +43,26 @@ class Binomial:
         self.check_arbitrage()
         self.set_risk_neutral_prob()
 
-    def set_binomial_from_black_scholes(self, maturity_T, r, n_period, c_dividend, sigma, price, s_k_price,
-                                        type_amer_eur,
-                                        type_call_put):
-        ''' set parameters by Black Scholes Model
-         :param T: maturity T
-         :param r: continuously-compounded interest rate at maturity T
-         :param n_period: number of period of the binomial model
-         :param c_dividends: dividend yield of c
-        '''
+    def set_binomial_from_black_scholes(
+        self,
+        maturity_T,
+        r,
+        n_period,
+        c_dividend,
+        sigma,
+        price,
+        s_k_price,
+        type_amer_eur,
+        type_call_put,
+    ):
+        """set parameters by Black Scholes Model
+        :param T: maturity T
+        :param r: continuously-compounded interest rate at maturity T
+        :param n_period: number of period of the binomial model
+        :param c_dividends: dividend yield of c
+        """
         self.u = m.exp(sigma * m.sqrt(maturity_T / n_period))
-        self.d = 1. / self.u
+        self.d = 1.0 / self.u
         self.price = price
         self.R = m.exp(r * maturity_T / n_period)
         self.n = n_period
@@ -81,9 +90,8 @@ class Binomial:
         print("-----------------------------------------")
 
     def check_arbitrage(self):
-        ''' check up price and interest rate prevent arbitrage oppotunity
-        '''
-        if self.u < 1.:
+        """check up price and interest rate prevent arbitrage oppotunity"""
+        if self.u < 1.0:
             print("!! no price up is wrong!!", self.u)
         if self.u < self.R:
             print("!! arbitrage by short sell stock !!", self.u, self.R)
@@ -91,8 +99,7 @@ class Binomial:
             print("!! arbitrage by borrow cash to buy !!", self.d, self.R)
 
     def set_risk_neutral_prob(self):
-        ''' return risk neutral probabilities
-        '''
+        """return risk neutral probabilities"""
         self.check_arbitrage()
         self.q = (self.R - self.d - self.coupon_rate) / (self.u - self.d)
 
@@ -100,7 +107,8 @@ class Binomial:
     #################################################
     #################################################
     def calc_option_price(self, display=True):
-        if display: self.display_setup()
+        if display:
+            self.display_setup()
 
         if "american" in self.type:
             self.calc_option_diagram(self.type[0], self.type[1])
@@ -109,12 +117,15 @@ class Binomial:
             return self.calc_european_option()
 
     def calc_european_option(self):
-        ''' calculate call option price
-            the prices for american and european are same
-        '''
+        """calculate call option price
+        the prices for american and european are same
+        """
         gain = self.calc_gain_array_at_t(self.n, self.type[0])
-        qv = [(self.q) ** i * (1 - self.q) ** (self.n - i) * comb(self.n, i) for i in range(self.n, -1, -1)]
-        return np.dot(gain, qv) / self.R ** self.n
+        qv = [
+            (self.q) ** i * (1 - self.q) ** (self.n - i) * comb(self.n, i)
+            for i in range(self.n, -1, -1)
+        ]
+        return np.dot(gain, qv) / self.R**self.n
 
     def calc_option_diagram(self, option_type, amer_eur):
         list_is_early_stop = []
@@ -127,8 +138,12 @@ class Binomial:
                 list_is_early_stop.append(np.zeros_like(gain_i))
                 continue
             option_price_tp1 = list_periods[-1]
-            option_price = [onePeriodPrice(option_price_tp1[j], option_price_tp1[j + 1], self.q, (self.R - 1)) for j in
-                            range(0, i + 1)]
+            option_price = [
+                onePeriodPrice(
+                    option_price_tp1[j], option_price_tp1[j + 1], self.q, (self.R - 1)
+                )
+                for j in range(0, i + 1)
+            ]
             # option_stop = np.zeros_like(option_price)
 
             gain_i = self.calc_gain_array_at_t(i, option_type)
@@ -151,11 +166,13 @@ class Binomial:
         return gain
 
     def get_stock_price_array_at_t(self, t):
-        ''' return stock price at time t
+        """return stock price at time t
         :param t: time step t
-        '''
-        return np.array([(self.u) ** i * (self.d) ** (t - i) \
-                         for i in range(t, -1, -1)]) * self.price
+        """
+        return (
+            np.array([(self.u) ** i * (self.d) ** (t - i) for i in range(t, -1, -1)])
+            * self.price
+        )
 
     def display_diagram(self, option_stop=False):
         self.calc_option_diagram(self.type[0], self.type[1])
@@ -167,7 +184,11 @@ class Binomial:
         self.print_diagram(self.diagram_stop)
 
     def print_diagram(self, diagram, text="prices"):
-        print("\n-------- binomial model for {}, for {} periods --------".format(text, self.n))
+        print(
+            "\n-------- binomial model for {}, for {} periods --------".format(
+                text, self.n
+            )
+        )
         for row in range(0, len(diagram[-1])):
             string = ""
             for col in range(0, len(diagram)):
