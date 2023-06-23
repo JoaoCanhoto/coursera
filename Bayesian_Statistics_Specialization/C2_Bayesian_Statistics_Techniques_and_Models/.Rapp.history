@@ -1,0 +1,724 @@
+data = read.csv(file="winequality-red2.csv", header=TRUE)
+data = read.csv(file="concrete_data.csv", header=TRUE)
+head(data)
+print(colnames(data))
+pairs(data[1:11])
+pairs(data[1:9])
+Y<-data[,9]
+l <- 5
+pairs(data[1:11] , #
+	 cex = .25,#
+	bg = hcl.colors(l, "Temps")[Y] ,#
+	col = hcl.colors(l, "Temps")[Y] #
+	)
+pairs(data[1:8] , #
+	 cex = .25,#
+	bg = hcl.colors(l, "Temps")[Y] ,#
+	col = hcl.colors(l, "Temps")[Y] #
+	)
+l <- 50
+pairs(data[1:8] , #
+	 cex = .5,#
+	bg = hcl.colors(l, "Temps")[Y] ,#
+	col = hcl.colors(l, "Temps")[Y] #
+	)
+l <- length(unique(Y))
+pairs(data[1:8] , #
+	 cex = .5,#
+	bg = hcl.colors(l, "Temps")[Y] ,#
+	col = hcl.colors(l, "Temps")[Y] #
+	)
+l <- 2
+pairs(data[1:8] , #
+	 cex = .5,#
+	bg = hcl.colors(l, "Temps")[Y] ,#
+	col = hcl.colors(l, "Temps")[Y] #
+	)
+l <- length(unique(Y))#
+pairs(data[1:8] , #
+	 cex = .5,#
+	bg = hcl.colors(l, "Temps")[Y] ,#
+	col = hcl.colors(l, "Temps")[Y] #
+	)
+sprintf("Is there nan?:", sum(is.na(data)) == nrow(data) ) #
+print("column with nan?:")#
+print(which(colSums(is.na(data)) == nrow(data)) )
+hist(Y)
+dens=density(Y)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate")
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate")#
+par(new=TRUE)#
+hist(Y)
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate",
+par(new=FALSE)
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate",#
+xlim=range(c(0,90))#
+)#
+par(new=TRUE)#
+hist(Y, xlim=range(c(0,90)))
+par(new=FALSE)
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate",#
+xlim=range(c(0,90))#
+)
+par(new=TRUE)
+hist(Y, xlim=range(c(0,90)))
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) )
+hist(Y, xlim=range(c(0,90)))
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) )
+hist(Y, xlim=range(c(0,90)))
+sprintf("Is there nan?:", sum(is.na(data)) == nrow(data) ) #
+print("column with nan?:")#
+print(which(colSums(is.na(data)) == nrow(data)) )
+print(colnames(data))
+library("rjags")#
+#
+mod1_string = " model {#
+    for (i in 1:length(y)) {#
+        y[i] ~ dnorm(mu[i], prec)#
+        mu[i] = b[1] + b[2]*Cement_density[i] + b[3]* Blast_Furnace_Slag[i] +b[4]* Fly_Ash[i]  +b[5]* Water[i]  +b[6]* Superplasticizer[i]  +b[7]* Coarse_Aggregate[i]  +b[8]* Fine_Aggregate[i]  +b[9]* Age[i]  +b[10]* Concrete_compressive_strength[i] #
+        }#
+    for (i in 1:10) {#
+        b[i] ~ dnorm(0.0, 1.0/1.0e6)#
+    }#
+    prec ~ dgamma(5/2.0, 5*10.0/2.0)#
+    sig = sqrt( 1.0 / prec )#
+} "
+data$y = data$quality
+params1 = c("b", "sig")
+mod1 = jags.model(textConnection(mod1_string), data=data, n.chains=3)
+mod1_string = " model {#
+    for (i in 1:length(y)) {#
+        y[i] ~ dnorm(mu[i], prec)#
+        mu[i] = b[1] + b[2]*Cement_density[i] + b[3]* Blast_Furnace_Slag[i] +b[4]* Fly_Ash[i]  +b[5]* Water[i]  +b[6]* Superplasticizer[i]  +b[7]* Coarse_Aggregate[i]  +b[8]* Fine_Aggregate[i]  +b[9]* Age[i]  #
+        }#
+    for (i in 1:9) {#
+        b[i] ~ dnorm(0.0, 1.0/1.0e6)#
+    }#
+    prec ~ dgamma(5/2.0, 5*10.0/2.0)#
+    sig = sqrt( 1.0 / prec )#
+} "
+data$y = data$Concrete_compressive_strength
+mod1 = jags.model(textConnection(mod1_string), data=data, n.chains=3)
+update(mod1, 1000) # burn-in
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e4)#
+#
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+#----------------------------------------------#
+# Check the results#
+print("-------------------------")#
+print("Check the results")#
+#
+plot(mod1_sim)
+gelman.diag(mod1_sim)
+autocorr.diag(mod1_sim)
+effectiveSize(mod1_sim)
+autocorr.plot(mod1_sim)
+summary(mod1_sim)
+(pm_params1 = colMeans(mod1_csim)) # posterior mean
+X1 = as.matrix(data[1:8])
+yhat1 = drop(pm_params1[1] + X1 %*% pm_params1[2:9])
+resid1 = drop( drop(Y - yhat1 ) )
+resid1 = apply(resid1, 1, as.array)
+plot( yhat1 ) # against data index
+plot( resid1 ) # against data index
+plot(Y , yhat1) # against data index
+plot(yhat1 , Y) # against data index
+plot(yhat1 , resid1) # against data index
+qqnorm(resid1) # checking normality of residuals
+densY=density(Y)#
+densYhat1 =density(yhat1)#
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) )#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) )
+densY=density(Y)#
+densYhat1 =density(yhat1)#
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) , ylim=range(c(0,0.250)) )#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) , ylim=range(c(0,0.250)) )
+densY=density(Y)#
+densYhat1 =density(yhat1)#
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) , ylim=range(c(0,0.350)) )#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) , ylim=range(c(0,0.350)) )
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue"#
+ )
+densY=density(Y)#
+densYhat1 =density(yhat1)#
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) , ylim=range(c(0,0.350)) )#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue"#
+ )
+densY=density(Y)#
+densYhat1 =density(yhat1)#
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", xlim=range(c(0,90)) , ylim=range(c(0,0.350)) )#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )
+densY=density(Y)#
+densYhat1 =density(yhat1)#
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )#
+#
+legend(1, 95, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )#
+#
+legend(60, 0.025, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+legend(60, 75, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )#
+#
+legend(60, 75, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+legend(60, 0.1, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+legend(60, 0.3, legend=c("original", "model"),
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )#
+#
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:2, cex=0.8)
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:1, cex=0.8)
+print(colnames(data))
+plot(densY$x,length(data)*densY$y,type="l",xlab="Concrete_compressive_strength",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	#xlab="Value",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )#
+#
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:1, cex=0.8)
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Concrete_compressive_strength",ylab="Count estimate", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)#
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="",ylab="", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )#
+#
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:1, cex=0.8)
+plot(dens$x,length(data)*dens$y,type="l",xlab="Concrete compressive strength",ylab="distribution", xlim=range(c(0,90)) )
+# Plot y-values scaled by number of observations against x values#
+plot(dens$x,length(data)*dens$y,type="l",xlab="Concrete compressive strength",ylab="distribution",#
+	 xlim=range(c(0,90)), lwd = 2#
+ )
+plot(yhat1 , resid1) # against data index
+plot(yhat1 , Y) # against data index
+plot(Y , yhat1) # against data index
+plot(Y , yhat1, col = resid1) # against data index
+rbPal <- colorRampPalette(c('red','blue'))#
+#This adds a column of color values#
+# based on the y values#
+col_resid1 <- rbPal(10)[as.numeric(cut(resid1,breaks = 10))]#
+plot(Y , yhat1, col = col_resid1) # against data index
+rbPal <- colorRampPalette(c('red','blue'))#
+#This adds a column of color values#
+# based on the y values#
+col_resid1 <- rbPal(10)[as.numeric(cut(abs(resid1),breaks = 10))]#
+plot(Y , yhat1, col = col_resid1) # against data index
+#Create a function to generate a continuous color palette#
+rbPal <- colorRampPalette(c('blue','red'))#
+#This adds a column of color values#
+# based on the y values#
+col_resid1 <- rbPal(10)[as.numeric(cut(abs(resid1),breaks = 10))]#
+plot(Y , yhat1, col = col_resid1) # against data index
+plot( yhat1 ) # against data index
+plot( yhat1 , col = col_resid1) # against data index
+blue.axes <- list(col.axis = "blue", col.ticks = "blue")#
+legend.scale(c(0, 1), axis.args = blue.axes)
+legend.col(col = col_resid1, lev = resid1)
+install.packages("tofsims")
+#----------------------------------------------------------------------------------------#
+# Read data#
+data = read.csv(file="concrete_data.csv", header=TRUE)#
+head(data)
+summary(data)
+print("Look at the data dispersion")#
+Y<-data[,9]#
+l <- length(unique(Y))#
+pairs(data[1:8] , #
+	 cex = .5,#
+	bg = hcl.colors(l, "Temps")[Y] ,#
+	col = hcl.colors(l, "Temps")[Y] #
+	)
+# Plot y-values scaled by number of observations against x values#
+plot(dens$x,length(data)*dens$y,type="l",xlab="Concrete compressive strength",ylab="distribution",#
+	 xlim=range(c(0,90)), lwd = 2#
+ )
+hist(Y, xlim=range(c(0,90)))
+par(new=FALSE)#
+densY=density(Y)
+plot(densY$x,length(data)* densY$y,type="l",xlab="Concrete compressive strength",ylab="distribution",
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)* densY$y,type="l",xlab="Concrete compressive strength",ylab="distribution",#
+	 xlim=range(c(0,90)), lwd = 2#
+ )
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)* densY$y,type="l",xlab="Concrete compressive strength",ylab="distribution",#
+	 xlim=range(c(0,90)), lwd = 2#
+ )
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)* densY$y,type="l",xlab="Concrete compressive strength",ylab="distribution",#
+	 xlim=range(c(0,90)), lwd = 2#
+ )
+#----------------------------------------------------------------------------------------#
+# Create Model#
+library("rjags")#
+#
+mod1_string = " model {#
+    for (i in 1:length(y)) {#
+        y[i] ~ dnorm(mu[i], prec)#
+        mu[i] = b[1] + b[2]*Cement_density[i] + b[3]* Blast_Furnace_Slag[i] +b[4]* Fly_Ash[i]  +b[5]* Water[i]  +b[6]* Superplasticizer[i]  +b[7]* Coarse_Aggregate[i]  +b[8]* Fine_Aggregate[i]  +b[9]* Age[i]  #
+        }#
+    for (i in 1:9) {#
+        b[i] ~ dnorm(0.0, 1.0/1.0e6)#
+    }#
+    prec ~ dgamma(5/2.0, 5*10.0/2.0)#
+    sig = sqrt( 1.0 / prec )#
+} "
+#----------------------------------------------------------------------------------------#
+# Create Model#
+library("rjags")#
+#
+mod1_string = " model {#
+    for (i in 1:length(y)) {#
+        y[i] ~ dnorm(mu[i], prec)#
+        mu[i] = b[1] + b[2]*Cement_density[i] + b[3]* Blast_Furnace_Slag[i] +b[4]* Fly_Ash[i]  +b[5]* Water[i]  +b[6]* Superplasticizer[i]  +b[7]* Coarse_Aggregate[i]  +b[8]* Fine_Aggregate[i]  +b[9]* Age[i]  #
+        }#
+    for (i in 1:9) {#
+        b[i] ~ dnorm(0.0, 1.0/1.0e6)#
+    }#
+    prec ~ dgamma(5/2.0, 5*10.0/2.0)#
+    sig = sqrt( 1.0 / prec )#
+} "
+#----------------------------------------------------------------------------------------#
+# Fit the model#
+set.seed(72)#
+data$y = data$Concrete_compressive_strength#
+#
+params1 = c("b", "sig")
+mod1 = jags.model(textConnection(mod1_string), data=data, n.chains=3)
+inits1 = function() {#
+    inits = list("b"=rnorm(10,0.0,100.0), "prec"=rgamma(1,1.0,1.0))#
+}#
+inits1
+mod1 = jags.model(textConnection(mod1_string), data=data, inits=inits1, n.chains=3)
+inits1 = function() {#
+    inits = list("b"=rnorm(9,0.0,100.0), "prec"=rgamma(1,1.0,1.0))#
+}
+mod1 = jags.model(textConnection(mod1_string), data=data, inits=inits1, n.chains=3)
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e4)
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+plot(mod1_sim)
+gelman.diag(mod1_sim)
+autocorr.diag(mod1_sim)
+set.seed(72)
+mod1 = jags.model(textConnection(mod1_string), data=data, n.chains=3)
+update(mod1, 10000) # burn-in
+variable.names=params1,
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e4)
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+autocorr.diag(mod1_sim)
+update(mod1, 50000) # burn-in
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e4)#
+#
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+autocorr.diag(mod1_sim)
+mod1 = jags.model(textConnection(mod1_string), data=data, inits=inits1, n.chains=3)
+update(mod1, 50000) # burn-in#
+#
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e4)#
+#
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+autocorr.diag(mod1_sim)
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e5)
+autocorr.diag(mod1_sim)
+effectiveSize(mod1_sim)
+mod1 = jags.model(textConnection(mod1_string), data=data, n.chains=3)
+update(mod1, 50000) # burn-in
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e5)#
+#
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+autocorr.diag(mod1_sim)#
+#
+effectiveSize(mod1_sim)
+params1 = c("b", "sig")#
+inits1 = function() {#
+    inits = list("b"=rnorm(9,100.0,10000.0), "prec"=rgamma(1,1.0,1.0))#
+}
+mod1 = jags.model(textConnection(mod1_string), data=data, inits=inits1, n.chains=3)
+update(mod1, 25000) # burn-in#
+#
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=5e4)#
+#
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+autocorr.diag(mod1_sim)#
+#
+effectiveSize(mod1_sim)
+summary(mod1_sim)
+inits1 = function() {#
+    inits = list("b"=rnorm(9,0.0,1000.0), "prec"=rgamma(1,1.0,1.0))#
+}
+mod1 = jags.model(textConnection(mod1_string), data=data, inits=inits1, n.chains=3)
+update(mod1, 15000) # burn-in#
+#
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=5e4)#
+#
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+autocorr.diag(mod1_sim)#
+#
+effectiveSize(mod1_sim)
+mod1 = jags.model(textConnection(mod1_string), data=data, n.chains=3)
+update(mod1, 25000) # burn-in
+autocorr.diag(mod1_sim)#
+#
+effectiveSize(mod1_sim)
+params1 = c("b", "sig")#
+inits1 = function() {#
+    inits = list("b"=rnorm(9,0.0,100.0), "prec"=rgamma(1,1.0,1.0))#
+}
+mod1 = jags.model(textConnection(mod1_string), data=data, inits=inits1, n.chains=3)
+update(mod1, 50000) # burn-in#
+#
+mod1_sim = coda.samples(model=mod1,#
+                        variable.names=params1,#
+                        n.iter=1e5)#
+#
+mod1_csim = do.call(rbind, mod1_sim) # combine multiple chains
+autocorr.diag(mod1_sim)#
+#
+effectiveSize(mod1_sim)
+autocorr.plot(mod1_sim)
+summary(mod1_sim)
+(pm_params1 = colMeans(mod1_csim)) # posterior mean
+plot( resid1 ) # against data index
+#----------------------------------------------------------------------------------------#
+# Check the results#
+# get average parameters:#
+(pm_params1 = colMeans(mod1_csim)) # posterior mean#
+# get fields to obtain model prediction#
+#class( as.matrix(data[1:11]) )#
+#head(as.matrix(data[1:11]))#
+#
+# data points into a matrix#
+X1 = as.matrix(data[1:8])#
+# get model prediction:#
+yhat1 = drop(pm_params1[1] + X1 %*% pm_params1[2:9])#
+#
+# get model residuos:#
+resid1 = drop( drop(Y - yhat1 ) )#
+#resid1 = apply(resid1, 1, as.array)
+plot( resid1 ) # against data index
+# plot model predictions vs original label, collored by residuos#
+plot(Y , yhat1, col = col_resid1) # against data index#
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:1, cex=0.8)
+#Create a function to generate a continuous color palette#
+rbPal <- colorRampPalette(c('blue','red'))#
+#This adds a column of color values#
+# based on the y values#
+col_resid1 <- rbPal(10)[as.numeric(cut(abs(resid1),breaks = 10))]
+plot( yhat1 , col = col_resid1) # against data index
+plot( resid1 ) # against data index
+# plot model predictions vs original label, collored by residuos#
+plot(Y , yhat1, col = col_resid1) # against data index#
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:1, cex=0.8)
+plot( yhat1 , col = col_resid1) # against data index
+# Check the residues#
+densRes=density(resid1)#
+#
+# Plot y-values scaled by number of observations against x values#
+plot(densRes$x,length(data)* densRes$y,type="l",xlab="Concrete compressive strength",ylab="distribution", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)
+# Plot y-values scaled by number of observations against x values#
+plot(densRes$x,length(data)* densRes$y,type="l",xlab="Concrete compressive strength",ylab="distribution", #
+	xlim=range(c(-40,40)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)
+# Plot y-values scaled by number of observations against x values#
+plot(densRes$x,length(data)* densRes$y,type="l",xlab="Concrete compressive strength",ylab="distribution", #
+	xlim=range(c(-40,40)) , ylim=range(c(0,0.450)), #
+	lwd = 2#
+)
+densRes=density(resid1)#
+# Plot y-values scaled by number of observations against x values#
+plot(densRes$x,length(data)* densRes$y,type="l",xlab="residues",ylab="distribution", #
+	xlim=range(c(-40,40)) , ylim=range(c(0,0.450)), #
+	lwd = 2#
+)
+# plot residuos vs model predictions #
+plot(yhat1 , resid1)
+qqnorm(resid1)
+densY=density(Y)#
+densYhat1 =density(yhat1)#
+#
+# Plot y-values scaled by number of observations against x values#
+plot(densY$x,length(data)*densY$y,type="l",xlab="Concrete compressive strength",ylab="distribution", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)), #
+	lwd = 2#
+)
+par(new=TRUE)#
+plot(densYhat1 $x,length(data)* densYhat1 $y,type="l",#
+	xlab="",ylab="", #
+	xlim=range(c(0,90)) , ylim=range(c(0,0.350)),#
+	col = "blue", lwd = 2#
+ )#
+#
+legend(60, 0.3, legend=c("original", "model"),#
+       col=c("black", "blue"), lty=1:1, cex=0.8)
+dic.samples(mod1, n.iter=1e3)
+dic.samples(mod1, n.iter=1e3)
+sd(resid1) # standard deviation of residuals
+rownames(data)[order(resid1, decreasing=TRUE)[1:8]] # which countries have the largest positive residuals?
+densplot(mod1_csim[,1:8], xlim=c(-3.0, 3.0))
+head(mod1_csim)
+densplot(mod1_csim[,1:2], xlim=c(-3.0, 3.0))
+densplot(mod1_csim, xlim=c(-3.0, 3.0))
+densplot(mod1_csim[1,], xlim=c(-3.0, 3.0))
+densplot(mod1_csim[,1], xlim=c(-3.0, 3.0))
+head(mod1_csim[,1])
+head(mod1_csim[,1:2])
+colMeans(mod1_csim)
+HPDinterval(mod1_csim)
+mod2_csim = as.mcmc(do.call(rbind, mod1_sim))
+HPDinterval(mod2_csim)
+plot(mod1_sim)
+summary(data)
+head(mod1_csim)
+head(mod1_csim[1:9])
+head(mod1_csim[,1:9])
+head(mod1_csim[,1:9] %*% point)
+head(mod1_csim[,1:9] %*% point)
+head(mod1_csim[,1:9] %*% point)
+point = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 45.66)
+head(mod1_csim[,1:9] %*% point)
+densplot(expected1)
+expected1 = mod1_csim[,1:9] %*% point
+densplot(expected1)
+head(expected1)
+expected1 = drop(mod1_csim[,1:9] %*% point)
+head(expected1)
+densplot(expected1)
+dim(mod1_csim)
+dim(expected1)
+densplot(mod1_csim[,1:9] %*% point)
+dens1=density(expected1)
+plot(dens1$x,length(mod1_csim)* dens1$y)
+plot(dens1$x,length(mod1_csim)* dens1$y)
+plot(dens1$x,dens1$y)
+HPDinterval(expected1)
+expected1 = mod1_csim[,1:9] %*% point
+HPDinterval(expected1)
+class(expected1)
+mean(expected1>30)
+mean(expected1>30)
+expected1 = drop(mod1_csim[,1:9] %*% point)
+mean(expected1>30)
+plot(dens1$x,dens1$y)
+point1 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 25.66)
+expected1 = drop(mod1_csim[,1:9] %*% point)
+mean(expected1>30)
+dens1=density(expected1)
+dens1=density(expected1)
+plot(dens1$x,dens1$y)
+densplot(expected1)
+point1 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 1)
+expected1 = drop(mod1_csim[,1:9] %*% point)#
+#
+dens1=density(expected1)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+#
+mean(expected1>30)
+point1 = c(1.0, 0, 0, 0, 0, 6.205, 972.9, 773.6, 1)
+expected1 = drop(mod1_csim[,1:9] %*% point)
+expected1 = drop(mod1_csim[,1:9] %*% point1)
+dens1=density(expected1)
+plot(dens1$x,dens1$y)
+point1 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 1)#
+#
+expected1 = drop(mod1_csim[,1:9] %*% point1)#
+dens1=density(expected1)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 1 day")#
+mean(expected1>35)
+point2 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 80)#
+expected2 = drop(mod1_csim[,1:9] %*% point2)#
+dens1=density(expected2)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 80 day")#
+mean(expected1>35)
+summary(data)
+point1 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 20)#
+#
+expected1 = drop(mod1_csim[,1:9] %*% point1)#
+dens1=density(expected1)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)
+point1 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 25)#
+#
+expected1 = drop(mod1_csim[,1:9] %*% point1)#
+dens1=density(expected1)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 1 day")#
+mean(expected1>35)
+point2 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 50)#
+expected2 = drop(mod1_csim[,1:9] %*% point2)#
+dens1=density(expected2)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 80 day")#
+mean(expected1>35)
+mean(expected2>35)
+point1 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 30)#
+#
+expected1 = drop(mod1_csim[,1:9] %*% point1)#
+dens1=density(expected1)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 1 day")#
+mean(expected1>35)
+point1 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 30)#
+#
+expected1 = drop(mod1_csim[,1:9] %*% point1)#
+dens1=density(expected1)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 30 day")#
+mean(expected1>35)
+point2 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 45)#
+expected2 = drop(mod1_csim[,1:9] %*% point2)#
+dens1=density(expected2)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 80 day")#
+mean(expected2>35)
+point2 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 45)#
+expected2 = drop(mod1_csim[,1:9] %*% point2)#
+dens1=density(expected2)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 80 day")#
+mean(expected2>35.5)
+point3 = c(1.0, 281.2, 73.9, 54.19, 181.6, 6.205, 972.9, 773.6, 50)#
+expected3 = drop(mod1_csim[,1:9] %*% point3)#
+dens1=density(expected3)#
+# Plot y-values scaled by number of observations against x values#
+plot(dens1$x,dens1$y)#
+print("Probability that the strength is above 35 for concrete with 50 day")#
+mean(expected3>35.5)
